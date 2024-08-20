@@ -1,0 +1,73 @@
+---
+title: "EDS 221: Day 7 Activity"
+author: "Takeen Shamloo"
+format: html
+editor_options: 
+  chunk_output_type: console
+---
+
+# EDS 221: Day 7 Activity ----
+
+```{r}
+# Load packages
+library(tidyverse)
+library(janitor)
+library(here)
+library(stringr)
+library(datapasta)
+```
+
+## Task 1: Join on Birds ----
+
+### Read in data/subsetting ----
+```{r}
+# Read in data
+bird_observations <- read_csv(here("data", "52_pp52_birds_1.csv"))
+sites <- read_csv(here("data", "52_pp52_sites_1.csv"))
+surveys <- read_csv(here("data", "52_pp52_surveys_1.csv"))
+taxalist <- read_csv(here("data", "52_pp52_taxalist_1.csv"))
+
+# subsetting
+birds_subset <- bird_observations |>
+  filter(species_id %in% c("BHCO", "RWBL") & site_id %in% c("LI-W", "NU-C"))
+```
+
+### Left join ----
+
+```{r}
+birds_left <- left_join(birds_subset, sites, by = "site_id")
+birds_left <- left_join(birds_left, taxalist, by = "species_id")
+birds_left
+```
+
+### Full join ----
+
+```{r}
+# I expect it to contain everything from our subset with the addition of all the columns and information from sites excluding a duplicate of the column its using as a key.
+
+birds_full <- full_join(birds_subset, sites, by = "site_id") # as expected.
+```
+
+## Task 2: Data wrangling and visualization with birds ----
+
+```{r}
+bird_observations <- bird_observations |>
+  rename(bird_obs_notes = notes)
+
+full_birds_df <- bird_observations |>
+  full_join(sites, by = "site_id") |> 
+  full_join(surveys, by = "site_id") |>
+  full_join(taxalist, by = "species_id") |>
+  select(c("survey_date", "common_name", "park_name", "bird_count")) |>
+  mutate(survey_month = as.factor(lubridate::month(survey_date))) |>
+  relocate(survey_month, .after = survey_date) |>
+  group_by(park_name, survey_month) |>
+  summarize(bird_count_by_park = n()) |>
+  filter(park_name %in% c("Lindo", "Orme", "Palomino", "Sonrisa")) 
+
+head(full_birds_df)
+```
+
+
+
+
